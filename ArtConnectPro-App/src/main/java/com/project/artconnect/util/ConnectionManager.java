@@ -7,6 +7,9 @@ import java.sql.SQLException;
  * Utility class to manage JDBC connections.
  * TODO: Students must implementation the getConnection logic.
  */
+import com.project.artconnect.config.DatabaseConfig;
+import java.sql.DriverManager;
+
 public class ConnectionManager {
 
     /**
@@ -19,6 +22,11 @@ public class ConnectionManager {
         // TODO: Students should implement this using DatabaseConfig properties
         // return DriverManager.getConnection(DatabaseConfig.URL, DatabaseConfig.USER,
         // DatabaseConfig.PASSWORD);
-        throw new UnsupportedOperationException("Database connection logic not yet implemented.");
+        return DriverManager.getConnection(
+                DatabaseConfig.URL,
+                DatabaseConfig.USER,
+                DatabaseConfig.PASSWORD
+        );
+
     }
 }

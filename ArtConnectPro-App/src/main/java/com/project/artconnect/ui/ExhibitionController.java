@@ -41,10 +41,10 @@ public class ExhibitionController {
     }
 
     private void refreshData() {
-        List<Exhibition> all = new ArrayList<>();
-        for (Gallery g : galleryService.getAllGalleries()) {
-            all.addAll(g.getExhibitions());
-        }
+        // On appelle directement le nouveau service branché sur la BD
+        List<Exhibition> all = ServiceProvider.getExhibitionService().getAllExhibitions();
+
+        // On met à jour le tableau
         exhibitionTable.setItems(FXCollections.observableArrayList(all));
     }
 }

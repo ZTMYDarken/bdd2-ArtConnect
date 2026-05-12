@@ -23,22 +23,26 @@ public class ServiceProvider {
     }
 
     public static ArtistService getArtistService() {
-        return artistService;
+        return new ArtistServiceImpl();
     }
 
     public static ArtworkService getArtworkService() {
-        return artworkService;
+        return new ArtworkServiceImpl();
     }
 
     public static GalleryService getGalleryService() {
-        return galleryService;
+        return new GalleryServiceImpl();
     }
 
     public static WorkshopService getWorkshopService() {
-        return workshopService;
+        return new WorkshopServiceImpl();
     }
 
     public static CommunityService getCommunityService() {
-        return communityService;
+        return new CommunityServiceImpl();
+    }
+
+    public static ExhibitionService getExhibitionService() {
+        return new ExhibitionServiceImpl();
     }
 }
