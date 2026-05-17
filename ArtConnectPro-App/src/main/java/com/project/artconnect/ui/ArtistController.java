@@ -6,8 +6,11 @@ import com.project.artconnect.service.ArtistService;
 import com.project.artconnect.util.ServiceProvider;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
 import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
 import javafx.scene.control.cell.PropertyValueFactory;
+import java.util.Optional;
 
 public class ArtistController {
     @FXML
@@ -102,19 +105,81 @@ public class ArtistController {
 
     @FXML
     private void handleAddArtist() {
-        // On crée un artiste par défaut pour tester la persistance JDBC.
-        Artist newArtist = new Artist();
-        newArtist.setName("Nouvel Artiste " + System.currentTimeMillis() % 1000);
-        newArtist.setCity("Paris");
-        newArtist.setContactEmail("contact@nouveau.com");
-        newArtist.setBirthYear(1995);
-        newArtist.setActive(true);
+        Dialog<Artist> dialog = new Dialog<>();
+        dialog.setTitle("Ajouter un artiste");
+        dialog.setHeaderText("Remplissez les informations de l'artiste");
 
-        // Envoi à la base de données
-        artistService.createArtist(newArtist);
+        ButtonType addButtonType = new ButtonType("Ajouter", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(addButtonType, ButtonType.CANCEL);
 
-        // Rafraîchissement de l'affichage
-        refreshTable();
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        TextField nameField        = new TextField();
+        TextField cityField        = new TextField();
+        TextField emailField       = new TextField();
+        TextField phoneField       = new TextField();
+        TextField birthYearField   = new TextField();
+        TextField websiteField     = new TextField();
+        TextField socialMediaField = new TextField();
+        TextArea  bioField         = new TextArea();
+        CheckBox  activeBox        = new CheckBox("Actif");
+
+        nameField.setPromptText("ex: Pablo Picasso");
+        cityField.setPromptText("ex: Paris");
+        emailField.setPromptText("ex: contact@artiste.com");
+        phoneField.setPromptText("ex: 0612345678");
+        birthYearField.setPromptText("ex: 1990");
+        websiteField.setPromptText("ex: https://monsite.com");
+        socialMediaField.setPromptText("ex: @artiste");
+        bioField.setPromptText("Biographie...");
+        bioField.setPrefRowCount(3);
+        activeBox.setSelected(true);
+
+        grid.add(new Label("Nom *"),         0, 0); grid.add(nameField,        1, 0);
+        grid.add(new Label("Ville"),         0, 1); grid.add(cityField,        1, 1);
+        grid.add(new Label("Email"),         0, 2); grid.add(emailField,       1, 2);
+        grid.add(new Label("Téléphone"),     0, 3); grid.add(phoneField,       1, 3);
+        grid.add(new Label("Année de naissance"), 0, 4); grid.add(birthYearField, 1, 4);
+        grid.add(new Label("Site web"),      0, 5); grid.add(websiteField,     1, 5);
+        grid.add(new Label("Réseaux sociaux"), 0, 6); grid.add(socialMediaField, 1, 6);
+        grid.add(new Label("Biographie"),    0, 7); grid.add(bioField,         1, 7);
+        grid.add(new Label("Statut"),        0, 8); grid.add(activeBox,        1, 8);
+
+        dialog.getDialogPane().setContent(grid);
+
+        // Bouton Ajouter désactivé tant que le nom est vide
+        javafx.scene.Node addButton = dialog.getDialogPane().lookupButton(addButtonType);
+        addButton.setDisable(true);
+        nameField.textProperty().addListener((obs, oldVal, newVal) ->
+                addButton.setDisable(newVal.trim().isEmpty()));
+
+        dialog.setResultConverter(buttonType -> {
+            if (buttonType != addButtonType) return null;
+
+            Artist artist = new Artist();
+            artist.setName(nameField.getText().trim());
+            artist.setCity(cityField.getText().trim());
+            artist.setContactEmail(emailField.getText().trim());
+            artist.setPhone(phoneField.getText().trim());
+            artist.setWebsite(websiteField.getText().trim());
+            artist.setSocialMedia(socialMediaField.getText().trim());
+            artist.setBio(bioField.getText().trim());
+            artist.setActive(activeBox.isSelected());
+
+            try { artist.setBirthYear(Integer.parseInt(birthYearField.getText().trim())); }
+            catch (NumberFormatException ignored) {}
+
+            return artist;
+        });
+
+        Optional<Artist> result = dialog.showAndWait();
+        result.ifPresent(artist -> {
+            artistService.createArtist(artist);
+            refreshTable();
+        });
     }
 
     @FXML

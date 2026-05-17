@@ -1,17 +1,19 @@
 package com.project.artconnect.ui;
 
+import com.project.artconnect.model.Artist;
 import com.project.artconnect.model.Artwork;
 import com.project.artconnect.service.ArtworkService;
 import com.project.artconnect.util.ServiceProvider;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.geometry.Insets;
+import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.util.converter.DoubleStringConverter;
+import java.util.Optional;
 
 public class ArtworkController {
     @FXML
@@ -105,15 +107,90 @@ public class ArtworkController {
 
     @FXML
     private void handleAddArtwork() {
-        Artwork newArt = new Artwork();
-        newArt.setTitle("Nouvelle Oeuvre " + System.currentTimeMillis() % 1000);
-        newArt.setType("Painting");
-        newArt.setPrice(0.0);
-        newArt.setStatus(Artwork.Status.FOR_SALE);
-        newArt.setCreationYear(2026);
+        Dialog<Artwork> dialog = new Dialog<>();
+        dialog.setTitle("Ajouter une œuvre");
+        dialog.setHeaderText("Remplissez les informations de l'œuvre");
 
-        artworkService.createArtwork(newArt);
-        refreshTable();
+        ButtonType addButtonType = new ButtonType("Ajouter", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(addButtonType, ButtonType.CANCEL);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        TextField titleField       = new TextField();
+        TextField yearField        = new TextField();
+        TextField typeField        = new TextField();
+        TextField mediumField      = new TextField();
+        TextField dimensionsField  = new TextField();
+        TextArea  descriptionField = new TextArea();
+        TextField priceField       = new TextField();
+        ComboBox<Artwork.Status> statusBox = new ComboBox<>(
+                FXCollections.observableArrayList(Artwork.Status.values()));
+        TextField artistField      = new TextField();
+
+        titleField.setPromptText("ex: La Joconde");
+        yearField.setPromptText("ex: 2024");
+        typeField.setPromptText("ex: Painting");
+        mediumField.setPromptText("ex: Oil on canvas");
+        dimensionsField.setPromptText("ex: 77x53 cm");
+        descriptionField.setPromptText("Description...");
+        descriptionField.setPrefRowCount(3);
+        priceField.setPromptText("ex: 1500.0");
+        statusBox.setValue(Artwork.Status.FOR_SALE);
+        artistField.setPromptText("Nom de l'artiste");
+
+        grid.add(new Label("Titre *"),       0, 0); grid.add(titleField,       1, 0);
+        grid.add(new Label("Année"),         0, 1); grid.add(yearField,        1, 1);
+        grid.add(new Label("Type"),          0, 2); grid.add(typeField,        1, 2);
+        grid.add(new Label("Medium"),        0, 3); grid.add(mediumField,      1, 3);
+        grid.add(new Label("Dimensions"),    0, 4); grid.add(dimensionsField,  1, 4);
+        grid.add(new Label("Description"),   0, 5); grid.add(descriptionField, 1, 5);
+        grid.add(new Label("Prix (€)"),      0, 6); grid.add(priceField,       1, 6);
+        grid.add(new Label("Statut"),        0, 7); grid.add(statusBox,        1, 7);
+        grid.add(new Label("Artiste"),       0, 8); grid.add(artistField,      1, 8);
+
+        dialog.getDialogPane().setContent(grid);
+
+        // Désactiver le bouton Ajouter tant que le titre est vide
+        javafx.scene.Node addButton = dialog.getDialogPane().lookupButton(addButtonType);
+        addButton.setDisable(true);
+        titleField.textProperty().addListener((obs, oldVal, newVal) ->
+                addButton.setDisable(newVal.trim().isEmpty()));
+
+        dialog.setResultConverter(buttonType -> {
+            if (buttonType != addButtonType) return null;
+
+            Artwork artwork = new Artwork();
+            artwork.setTitle(titleField.getText().trim());
+            artwork.setType(typeField.getText().trim());
+            artwork.setMedium(mediumField.getText().trim());
+            artwork.setDimensions(dimensionsField.getText().trim());
+            artwork.setDescription(descriptionField.getText().trim());
+            artwork.setStatus(statusBox.getValue());
+
+            try { artwork.setCreationYear(Integer.parseInt(yearField.getText().trim())); }
+            catch (NumberFormatException ignored) { artwork.setCreationYear(2026); }
+
+            try { artwork.setPrice(Double.parseDouble(priceField.getText().trim())); }
+            catch (NumberFormatException ignored) { artwork.setPrice(0.0); }
+
+            String artistName = artistField.getText().trim();
+            if (!artistName.isEmpty()) {
+                Artist artist = new Artist();
+                artist.setName(artistName);
+                artwork.setArtist(artist);
+            }
+
+            return artwork;
+        });
+
+        Optional<Artwork> result = dialog.showAndWait();
+        result.ifPresent(artwork -> {
+            artworkService.createArtwork(artwork);
+            refreshTable();
+        });
     }
 
     @FXML
