@@ -1,24 +1,26 @@
 CREATE DATABASE IF NOT EXISTS art_connect;
 USE art_connect;
 
+-- Suppression dans l'ordre inverse pour éviter les erreurs de dépendances
+DROP TABLE IF EXISTS Member_Discipline;
 DROP TABLE IF EXISTS Artist_Discipline;
 DROP TABLE IF EXISTS Exhibition_Artwork;
 DROP TABLE IF EXISTS Artwork_Tag;
-DROP TABLE IF EXISTS Member_Discipline;
-DROP TABLE IF EXISTS Discipline;
-DROP TABLE IF EXISTS ArtworkTag;
+DROP TABLE IF EXISTS Booking;
 DROP TABLE IF EXISTS Review;
+DROP TABLE IF EXISTS Workshop;
 DROP TABLE IF EXISTS Exhibition;
 DROP TABLE IF EXISTS Artwork;
+DROP TABLE IF EXISTS ArtworkTag;
+DROP TABLE IF EXISTS Discipline;
 DROP TABLE IF EXISTS Gallery;
-DROP TABLE IF EXISTS Booking;
-DROP TABLE IF EXISTS Workshop;
 DROP TABLE IF EXISTS Artist;
 DROP TABLE IF EXISTS CommunityMember;
 
+-- --- TABLES INDÉPENDANTES ---
 
 CREATE TABLE Artist(
-   id_artist INT,
+   id_artist INT AUTO_INCREMENT, -- AUTO_INCREMENT fortement conseillé pour le CRUD
    name VARCHAR(50),
    birthYear INT,
    bio VARCHAR(200),
@@ -31,29 +33,8 @@ CREATE TABLE Artist(
    PRIMARY KEY(id_artist)
 );
 
-CREATE TABLE Artwork(
-   id_artwork INT,
-   title VARCHAR(50),
-   creationYear INT,
-   type VARCHAR(50),
-   medium VARCHAR(50),
-   dimensions VARCHAR(50),
-   description VARCHAR(200),
-   price DECIMAL(15,2),
-   status VARCHAR(50),
-   id_artist INT,
-   PRIMARY KEY(id_artwork),
-   FOREIGN KEY (id_artist) REFERENCES Artist(id_artist)
-);
-
-CREATE TABLE ArtworkTag(
-   id_tag INT,
-   name VARCHAR(50),
-   PRIMARY KEY(id_tag)
-);
-
 CREATE TABLE CommunityMember(
-   id_member INT,
+   id_member INT AUTO_INCREMENT,
    name VARCHAR(50),
    email VARCHAR(50),
    birthYear INT,
@@ -63,14 +44,8 @@ CREATE TABLE CommunityMember(
    PRIMARY KEY(id_member)
 );
 
-CREATE TABLE Discipline(
-   id_discipline INT,
-   name VARCHAR(50),
-   PRIMARY KEY(id_discipline)
-);
-
 CREATE TABLE Gallery(
-   id_gallery INT,
+   id_gallery INT AUTO_INCREMENT,
    name VARCHAR(50),
    adress VARCHAR(50),
    ownerName VARCHAR(50),
@@ -81,8 +56,38 @@ CREATE TABLE Gallery(
    PRIMARY KEY(id_gallery)
 );
 
+CREATE TABLE Discipline(
+   id_discipline INT AUTO_INCREMENT,
+   name VARCHAR(50),
+   PRIMARY KEY(id_discipline)
+);
+
+CREATE TABLE ArtworkTag(
+   id_tag INT AUTO_INCREMENT,
+   name VARCHAR(50),
+   PRIMARY KEY(id_tag)
+);
+
+-- --- TABLES DÉPENDANTES ---
+
+CREATE TABLE Artwork(
+   id_artwork INT AUTO_INCREMENT,
+   title VARCHAR(50),
+   creationYear INT,
+   type VARCHAR(50),
+   medium VARCHAR(50),
+   dimensions VARCHAR(50),
+   description VARCHAR(200),
+   price DECIMAL(15,2),
+   status VARCHAR(50),
+   id_artist INT,
+   PRIMARY KEY(id_artwork),
+   -- Si on supprime l'artiste, l'oeuvre disparaît
+   FOREIGN KEY (id_artist) REFERENCES Artist(id_artist) ON DELETE CASCADE
+);
+
 CREATE TABLE Exhibition(
-   id_exhibition INT,
+   id_exhibition INT AUTO_INCREMENT,
    title VARCHAR(50),
    startDate DATE,
    endDate DATE,
@@ -91,23 +96,25 @@ CREATE TABLE Exhibition(
    theme VARCHAR(50),
    id_gallery INT,
    PRIMARY KEY(id_exhibition),
-   FOREIGN KEY (id_gallery) REFERENCES Gallery(id_gallery)
+   -- Si la galerie ferme, l'exposition est supprimée
+   FOREIGN KEY (id_gallery) REFERENCES Gallery(id_gallery) ON DELETE CASCADE
 );
 
 CREATE TABLE Review(
-   id_review INT,
+   id_review INT AUTO_INCREMENT,
    rating INT,
    comment VARCHAR(50),
    reviewDate DATE,
    id_member INT,
    id_artwork INT,
    PRIMARY KEY(id_review),
-   FOREIGN KEY (id_member) REFERENCES CommunityMember(id_member),
-   FOREIGN KEY (id_artwork) REFERENCES Artwork(id_artwork)
+   -- Si le membre part ou l'oeuvre est supprimée, la review disparaît
+   FOREIGN KEY (id_member) REFERENCES CommunityMember(id_member) ON DELETE CASCADE,
+   FOREIGN KEY (id_artwork) REFERENCES Artwork(id_artwork) ON DELETE CASCADE
 );
 
 CREATE TABLE Workshop(
-   id_workshop INT,
+   id_workshop INT AUTO_INCREMENT,
    title VARCHAR(50),
    dateWorkshop DATE,
    durationMinutes INT,
@@ -118,50 +125,53 @@ CREATE TABLE Workshop(
    level VARCHAR(50),
    id_artist INT,
    PRIMARY KEY(id_workshop),
-   FOREIGN KEY (id_artist) REFERENCES Artist(id_artist)
+   -- Si l'artiste est supprimé, ses workshops aussi
+   FOREIGN KEY (id_artist) REFERENCES Artist(id_artist) ON DELETE CASCADE
 );
 
 CREATE TABLE Booking(
-   id_booking INT,
+   id_booking INT AUTO_INCREMENT,
    bookingDate DATE,
    paymentStatus VARCHAR(50),
    id_workshop INT,
    id_member INT,
    PRIMARY KEY(id_booking),
-   FOREIGN KEY (id_workshop) REFERENCES Workshop(id_workshop),
-   FOREIGN KEY (id_member) REFERENCES CommunityMember(id_member)
+   FOREIGN KEY (id_workshop) REFERENCES Workshop(id_workshop) ON DELETE CASCADE,
+   FOREIGN KEY (id_member) REFERENCES CommunityMember(id_member) ON DELETE CASCADE
 );
+
+-- --- TABLES DE LIAISON (Toujours en CASCADE) ---
 
 CREATE TABLE Artist_Discipline(
    id_artist INT,
    id_discipline INT,
    PRIMARY KEY(id_artist, id_discipline),
-   FOREIGN KEY (id_artist) REFERENCES Artist(id_artist),
-   FOREIGN KEY (id_discipline) REFERENCES Discipline(id_discipline)
+   FOREIGN KEY (id_artist) REFERENCES Artist(id_artist) ON DELETE CASCADE,
+   FOREIGN KEY (id_discipline) REFERENCES Discipline(id_discipline) ON DELETE CASCADE
 );
 
 CREATE TABLE Exhibition_Artwork(
    id_exhibition INT,
    id_artwork INT,
    PRIMARY KEY(id_exhibition, id_artwork),
-   FOREIGN KEY (id_exhibition) REFERENCES Exhibition(id_exhibition),
-   FOREIGN KEY (id_artwork) REFERENCES Artwork(id_artwork)
+   FOREIGN KEY (id_exhibition) REFERENCES Exhibition(id_exhibition) ON DELETE CASCADE,
+   FOREIGN KEY (id_artwork) REFERENCES Artwork(id_artwork) ON DELETE CASCADE
 );
 
 CREATE TABLE Artwork_Tag(
    id_artwork INT,
    id_tag INT,
    PRIMARY KEY(id_artwork, id_tag),
-   FOREIGN KEY (id_tag) REFERENCES ArtworkTag(id_tag),
-   FOREIGN KEY (id_artwork) REFERENCES Artwork(id_artwork)
+   FOREIGN KEY (id_tag) REFERENCES ArtworkTag(id_tag) ON DELETE CASCADE,
+   FOREIGN KEY (id_artwork) REFERENCES Artwork(id_artwork) ON DELETE CASCADE
 );
 
 CREATE TABLE Member_Discipline(
    id_member INT,
    id_discipline INT,
    PRIMARY KEY(id_member, id_discipline),
-   FOREIGN KEY (id_member) REFERENCES CommunityMember(id_member),
-   FOREIGN KEY (id_discipline) REFERENCES Discipline(id_discipline)
+   FOREIGN KEY (id_member) REFERENCES CommunityMember(id_member) ON DELETE CASCADE,
+   FOREIGN KEY (id_discipline) REFERENCES Discipline(id_discipline) ON DELETE CASCADE
 );
 
 USE art_connect;
@@ -509,9 +519,9 @@ END //
 
 -- -----------------------------------------------------------
 -- TRIGGER 2 : trg_exhibition_date_check
--- Quand : AVANT insertion ET mise à jour d'une exposition.
--- Pourquoi : Garantit que la date de fin est toujours
--- postérieure à la date de début (cohérence des données).
+-- S'active avant l'insertion et mise à jour d'une exposition.
+-- Ce trigger permet de garantir que la date de fin est toujours
+-- postérieure à la date de début.
 -- -----------------------------------------------------------
 CREATE TRIGGER trg_exhibition_date_check_insert
 BEFORE INSERT ON Exhibition
@@ -537,7 +547,7 @@ END //
 -- -----------------------------------------------------------
 -- TRIGGER 3 : trg_review_rating_range
 -- S'active avant l'insertion d'un avis.
--- Permet de contraidre la note entre 1 et 5 étoiles.
+-- Permet de contraindre la note entre 1 et 5 étoiles.
 -- -----------------------------------------------------------
 CREATE TRIGGER trg_review_rating_range
 BEFORE INSERT ON Review
@@ -588,7 +598,7 @@ END //
 
 -- -----------------------------------------------------------
 -- PROCEDURE 3 : get_artists_by_city
--- artistes par ville
+-- Permet d'obtenir les artistes par ville
 -- -----------------------------------------------------------
 CREATE PROCEDURE get_artists_by_city(IN p_city VARCHAR(50))
 BEGIN
@@ -613,6 +623,7 @@ DELIMITER ;
 
 DELIMITER //
 
+-- Cette procédure permet qu'un membre effectue 2 réservations
 CREATE PROCEDURE sp_register_for_art_path(
     IN p_member_id INT,
     IN p_workshop1_id INT,
@@ -655,5 +666,10 @@ DELIMITER ;
 -- Test 1 : Inscription réussie au parcours (Ateliers 1 et 2 pour le membre 2)
 CALL sp_register_for_art_path(2, 1, 2);
 
--- Vérification
+-- Vérification : le membre a bien 2 réservations en plus.
 SELECT * FROM v_member_activity WHERE id_member = 2;
+
+
+
+select * from artist;
+select * from artwork;
